@@ -14,10 +14,9 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "monaco-editor": "^0.45.0",
-    "react-monaco-editor": "^0.55.0",
+    "monaco-editor": "^0.44.0",
     "@monaco-editor/react": "^4.6.0",
-    "react-diff-viewer": "^3.1.1",
+    "react-diff-view": "^3.2.1",
     "react-hotkeys-hook": "^4.4.1",
     "zustand": "^4.4.7",
     "immer": "^10.0.3",
@@ -31,7 +30,9 @@
     "react-syntax-highlighter": "^15.5.0",
     "fuse.js": "^7.0.0",
     "chokidar": "^3.5.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/forms": "^0.5.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",
