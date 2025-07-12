@@ -1,7 +1,18 @@
 import React from 'react';
-import { GitBranch, Zap, Cpu, Wifi, Check } from 'lucide-react';
+import { 
+  GitBranch, 
+  Database, 
+  Zap, 
+  CheckCircle, 
+  AlertCircle, 
+  Loader2,
+  Bot,
+  FileText,
+  Clock
+} from 'lucide-react';
 import { WorkspaceState } from '../../types';
 import { PuterAIService } from '../../services/PuterAIService';
+import { useAppStore } from '../../stores/AppStore';
 
 interface StatusBarProps {
   workspace: WorkspaceState;
@@ -9,86 +20,108 @@ interface StatusBarProps {
 }
 
 const StatusBar: React.FC<StatusBarProps> = ({ workspace, aiService }) => {
-  const isConnected = window.puter?.auth.isSignedIn() || false;
-  const hasActiveFile = !!workspace.activeFile;
-  const fileCount = workspace.files.length;
+  const { settings, lastAIResponse, requestsCount } = useAppStore();
+
+  const getAIStatus = () => {
+    if (!aiService) return 'disconnected';
+    if (window.puter?.auth?.isSignedIn()) return 'connected';
+    return 'guest';
+  };
+
+  const aiStatus = getAIStatus();
+  const hasActiveFile = workspace.activeFile !== null;
+  const currentFile = workspace.files.find(f => f.path === workspace.activeFile);
 
   return (
-    <div className="status-bar">
-      {/* Left side - File info */}
+    <div className="h-6 bg-editor-surface border-t border-editor-border flex items-center justify-between px-4 text-xs">
+      {/* Left Side - Workspace Info */}
       <div className="flex items-center gap-4">
-        <div className="status-item">
-          <span>
-            {hasActiveFile 
-              ? `${workspace.files.find(f => f.path === workspace.activeFile)?.name || 'Unknown'}`
-              : 'No file selected'
-            }
-          </span>
+        {/* Workspace Root */}
+        <div className="flex items-center gap-1 text-editor-text-muted">
+          <Database className="w-3 h-3" />
+          <span>{workspace.rootPath || 'No workspace'}</span>
         </div>
-        
-        {workspace.isIndexing && (
-          <div className="status-item">
-            <div className="animate-spin w-3 h-3 border border-editor-accent border-t-transparent rounded-full" />
-            <span>Indexing... {Math.round(workspace.indexProgress)}%</span>
+
+        {/* File Count */}
+        <div className="flex items-center gap-1 text-editor-text-muted">
+          <FileText className="w-3 h-3" />
+          <span>{workspace.files.length} files</span>
+        </div>
+
+        {/* Current File Info */}
+        {hasActiveFile && currentFile && (
+          <div className="flex items-center gap-1 text-editor-text">
+            <span>•</span>
+            <span>{currentFile.name}</span>
+            {currentFile.extension && (
+              <span className="text-editor-text-muted">
+                ({currentFile.extension})
+              </span>
+            )}
           </div>
         )}
 
-        <div className="status-item">
-          <span>{fileCount} files</span>
-        </div>
+        {/* Indexing Status */}
+        {workspace.isIndexing && (
+          <div className="flex items-center gap-1 text-ai-primary">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span>Indexing {Math.round(workspace.indexProgress)}%</span>
+          </div>
+        )}
       </div>
 
-      {/* Right side - System status */}
+      {/* Right Side - AI & System Status */}
       <div className="flex items-center gap-4">
-        {/* Git status */}
-        <div className="status-item">
+        {/* AI Performance Stats */}
+        <div className="flex items-center gap-3 text-editor-text-muted">
+          <div className="flex items-center gap-1">
+            <Bot className="w-3 h-3" />
+            <span>{requestsCount} requests</span>
+          </div>
+          {lastAIResponse > 0 && (
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span>{lastAIResponse}ms</span>
+            </div>
+          )}
+        </div>
+
+        {/* AI Model */}
+        <div className="flex items-center gap-1 text-editor-text-muted">
+          <Zap className="w-3 h-3" />
+          <span>{settings.general.defaultModel}</span>
+        </div>
+
+        {/* Git Status (placeholder) */}
+        <div className="flex items-center gap-1 text-editor-text-muted">
           <GitBranch className="w-3 h-3" />
           <span>main</span>
         </div>
 
-        {/* AI Status */}
-        <div className="status-item">
-          <Zap className="w-3 h-3 text-ai-primary" />
-          <span>AI Ready</span>
-          <div className={`w-2 h-2 rounded-full ml-1 ${aiService ? 'bg-editor-success' : 'bg-editor-error'}`} />
+        {/* AI Connection Status */}
+        <div className="flex items-center gap-1">
+          {aiStatus === 'connected' ? (
+            <>
+              <CheckCircle className="w-3 h-3 text-green-400" />
+              <span className="text-green-400">Connected</span>
+            </>
+          ) : aiStatus === 'guest' ? (
+            <>
+              <AlertCircle className="w-3 h-3 text-yellow-400" />
+              <span className="text-yellow-400">Guest Mode</span>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="w-3 h-3 text-red-400" />
+              <span className="text-red-400">Disconnected</span>
+            </>
+          )}
         </div>
 
-        {/* Connection Status */}
-        <div className="status-item">
-          <Wifi className="w-3 h-3" />
-          <span>{isConnected ? 'Connected' : 'Guest'}</span>
-          <div className={`w-2 h-2 rounded-full ml-1 ${isConnected ? 'bg-editor-success' : 'bg-editor-warning'}`} />
-        </div>
-
-        {/* Performance */}
-        <div className="status-item">
-          <Cpu className="w-3 h-3" />
-          <span>Normal</span>
-        </div>
-
-        {/* Selection info */}
-        {hasActiveFile && (
-          <div className="status-item">
-            <span>Ln 1, Col 1</span>
-          </div>
-        )}
-
-        {/* Language */}
-        {hasActiveFile && (
-          <div className="status-item">
-            <span>TypeScript</span>
-          </div>
-        )}
-
-        {/* Encoding */}
-        <div className="status-item">
-          <span>UTF-8</span>
-        </div>
-
-        {/* Auto Save */}
-        <div className="status-item">
-          <Check className="w-3 h-3 text-editor-success" />
-          <span>Auto Save</span>
+        {/* Puter.js Badge */}
+        <div className="flex items-center gap-1 text-ai-primary">
+          <div className="w-2 h-2 bg-ai-primary rounded-full"></div>
+          <span>Puter.js</span>
         </div>
       </div>
     </div>

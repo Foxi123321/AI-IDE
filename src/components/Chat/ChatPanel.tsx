@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Send, Bot, User, Zap } from 'lucide-react';
-import { WorkspaceState } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Send, Bot, User, Zap, Trash2, Plus } from 'lucide-react';
+import { WorkspaceState, ChatMessage } from '../../types';
 import { PuterAIService } from '../../services/PuterAIService';
+import { useAppStore } from '../../stores/AppStore';
 
 interface ChatPanelProps {
   aiService: PuterAIService | null;
@@ -10,54 +11,77 @@ interface ChatPanelProps {
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ aiService, workspace }) => {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-  }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { 
+    chatSessions, 
+    activeChatSession, 
+    createChatSession, 
+    addChatMessage, 
+    deleteChatSession,
+    setActiveChatSession
+  } = useAppStore();
+
+  const currentSession = chatSessions.find(s => s.id === activeChatSession);
+
+  // Create initial chat session if none exists
+  useEffect(() => {
+    if (chatSessions.length === 0) {
+      createChatSession('New Chat');
+    }
+  }, [chatSessions.length, createChatSession]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !aiService) return;
+    if (!message.trim() || !aiService || !activeChatSession) return;
 
-    const userMessage = {
-      id: `msg_${Date.now()}`,
-      role: 'user' as const,
+    // Add user message
+    addChatMessage(activeChatSession, {
+      role: 'user',
       content: message,
-      timestamp: new Date()
-    };
+      metadata: { 
+        filePath: workspace.activeFile || undefined 
+      }
+    });
 
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = message;
     setMessage('');
     setIsLoading(true);
 
     try {
-      // For now, just simulate an AI response
-      // TODO: Use aiService.askQuestion() when the service is properly initialized
-      const aiResponse = {
-        id: `msg_${Date.now() + 1}`,
-        role: 'assistant' as const,
-        content: `I understand you want to "${message}". I'm powered by Puter.js and can help you with:
+      // Get context from current file if available
+      const currentFile = workspace.files.find(f => f.path === workspace.activeFile);
+      const context = currentFile?.content || '';
+      
+      // Build context with file info
+      const contextMessage = currentFile ? 
+        `Current file: ${currentFile.name}\n\`\`\`\n${context}\n\`\`\`\n\nUser question: ${userMessage}` : 
+        userMessage;
 
-• Code completion and suggestions
-• Debugging and error analysis  
-• Refactoring and optimization
-• Generating tests and documentation
-• Explaining complex code patterns
-
-Try asking me about your code or request specific programming help!`,
-        timestamp: new Date()
-      };
-
-      // Simulate typing delay
-      setTimeout(() => {
-        setMessages(prev => [...prev, aiResponse]);
-        setIsLoading(false);
-      }, 1000);
+      // Get AI response
+      const aiResponse = await aiService.askQuestion(contextMessage, context, 'gpt-4o-mini');
+      
+      // Add AI response
+      addChatMessage(activeChatSession, {
+        role: 'assistant',
+        content: aiResponse,
+        model: 'gpt-4o-mini',
+        metadata: { 
+          filePath: workspace.activeFile || undefined 
+        }
+      });
 
     } catch (error) {
       console.error('Chat error:', error);
+      // Add error message
+      addChatMessage(activeChatSession, {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        metadata: { 
+          error: true,
+          filePath: workspace.activeFile || undefined 
+        }
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -69,23 +93,54 @@ Try asking me about your code or request specific programming help!`,
     }
   };
 
+  const handleNewChat = () => {
+    const sessionId = createChatSession();
+    setActiveChatSession(sessionId);
+  };
+
+  const handleDeleteChat = () => {
+    if (activeChatSession) {
+      deleteChatSession(activeChatSession);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-editor-surface">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-editor-border">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-ai-primary" />
-          <h2 className="font-semibold text-editor-text">AI Assistant</h2>
+          <h2 className="font-semibold text-editor-text">
+            {currentSession?.name || 'AI Assistant'}
+          </h2>
         </div>
-        <div className="flex items-center gap-1 text-xs text-editor-text-muted">
-          <Zap className="w-3 h-3" />
-          <span>Powered by Puter.js</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleNewChat}
+            className="p-1 hover:bg-editor-border rounded text-editor-text-muted hover:text-editor-text"
+            title="New Chat"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          {currentSession && (
+            <button
+              onClick={handleDeleteChat}
+              className="p-1 hover:bg-editor-border rounded text-editor-text-muted hover:text-red-400"
+              title="Delete Chat"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          <div className="flex items-center gap-1 text-xs text-editor-text-muted">
+            <Zap className="w-3 h-3" />
+            <span>Puter.js</span>
+          </div>
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {!currentSession || currentSession.messages.length === 0 ? (
           <div className="text-center text-editor-text-muted py-8">
             <Bot className="w-12 h-12 mx-auto mb-4 text-ai-primary opacity-50" />
             <h3 className="font-medium mb-2">Start a conversation</h3>
@@ -102,61 +157,72 @@ Try asking me about your code or request specific programming help!`,
               </div>
             </div>
           </div>
-        )}
-
-        {messages.map((msg) => (
-          <div key={msg.id} className={`chat-message ${msg.role}`}>
-            <div className="flex items-start gap-3">
-              <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                ${msg.role === 'user' 
-                  ? 'bg-editor-accent text-white' 
-                  : 'bg-ai-primary text-white'
-                }
-              `}>
-                {msg.role === 'user' ? (
-                  <User className="w-4 h-4" />
-                ) : (
-                  <Bot className="w-4 h-4" />
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
-                    {msg.role === 'user' ? 'You' : 'AI Assistant'}
-                  </span>
-                  <span className="text-xs text-editor-text-muted">
-                    {msg.timestamp.toLocaleTimeString()}
-                  </span>
+        ) : (
+          currentSession.messages.map((msg) => (
+            <div key={msg.id} className={`chat-message ${msg.role}`}>
+              <div className="flex items-start gap-3">
+                <div className={`
+                  w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                  ${msg.role === 'user' 
+                    ? 'bg-editor-accent text-white' 
+                    : 'bg-ai-primary text-white'
+                  }
+                `}>
+                  {msg.role === 'user' ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    <Bot className="w-4 h-4" />
+                  )}
                 </div>
-                <div className="prose prose-sm max-w-none text-editor-text">
-                  {msg.content.split('\n').map((line, i) => (
-                    <div key={i} className="mb-1">
-                      {line.startsWith('•') ? (
-                        <div className="flex items-start gap-2">
-                          <span className="text-ai-accent">•</span>
-                          <span>{line.substring(1).trim()}</span>
-                        </div>
-                      ) : (
-                        line
-                      )}
-                    </div>
-                  ))}
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">
+                      {msg.role === 'user' ? 'You' : 'AI Assistant'}
+                    </span>
+                    <span className="text-xs text-editor-text-muted">
+                      {msg.timestamp.toLocaleTimeString()}
+                    </span>
+                    {msg.model && (
+                      <span className="text-xs text-ai-accent">
+                        {msg.model}
+                      </span>
+                    )}
+                  </div>
+                  <div className="prose prose-sm max-w-none text-editor-text">
+                    {msg.content.split('\n').map((line, i) => (
+                      <div key={i} className="mb-1">
+                        {line.startsWith('•') ? (
+                          <div className="flex items-start gap-2">
+                            <span className="text-ai-accent">•</span>
+                            <span>{line.substring(1).trim()}</span>
+                          </div>
+                        ) : line.startsWith('```') ? (
+                          <div className="bg-editor-bg rounded p-2 font-mono text-sm">
+                            {line.replace(/```/g, '')}
+                          </div>
+                        ) : (
+                          line
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         {isLoading && (
           <div className="chat-message assistant">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-ai-primary flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+                <Bot className="w-4 h-4 text-white animate-pulse" />
               </div>
               <div className="flex-1">
-                <div className="ai-thinking">Thinking</div>
+                <div className="text-editor-text-muted text-sm">
+                  <span className="animate-pulse">AI is thinking...</span>
+                </div>
               </div>
             </div>
           </div>
@@ -200,7 +266,11 @@ Try asking me about your code or request specific programming help!`,
         
         <div className="flex items-center justify-between mt-2 text-xs text-editor-text-muted">
           <span>Press Enter to send, Shift+Enter for new line</span>
-          <span>Powered by Puter.js AI</span>
+          <span>
+            {workspace.activeFile && (
+              <span className="text-ai-accent">Context: {workspace.activeFile}</span>
+            )}
+          </span>
         </div>
       </div>
     </div>

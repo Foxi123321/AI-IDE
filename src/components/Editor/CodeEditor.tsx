@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { WorkspaceState } from '../../types';
 import { PuterAIService } from '../../services/PuterAIService';
+import { useAppStore } from '../../stores/AppStore';
 import { FileText, Plus, X } from 'lucide-react';
 
 interface CodeEditorProps {
@@ -12,6 +13,7 @@ interface CodeEditorProps {
 const CodeEditor: React.FC<CodeEditorProps> = ({ workspace, aiService }) => {
   const [editorContent, setEditorContent] = useState('');
   const editorRef = useRef<any>(null);
+  const { setActiveFile, closeFile, addFile, updateFile, updateEditorContent } = useAppStore();
   
   const currentFile = workspace.files.find(f => f.path === workspace.activeFile);
   
@@ -44,14 +46,86 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ workspace, aiService }) => {
     
     // Add AI completion keybindings
     editor.addCommand(monaco.KeyMod.Ctrl | monaco.KeyCode.KeyK, () => {
-      // TODO: Trigger AI completion
-      console.log('AI completion triggered');
+      handleAICompletion();
     });
   };
 
   const handleEditorChange = (value: string | undefined) => {
-    setEditorContent(value || '');
-    // TODO: Mark file as modified and save to workspace
+    const content = value || '';
+    setEditorContent(content);
+    updateEditorContent(content);
+    
+    // Update file content in workspace
+    if (currentFile) {
+      updateFile(currentFile.path, { content });
+    }
+  };
+
+  const handleAICompletion = async () => {
+    if (!aiService || !editorRef.current) return;
+    
+    try {
+      const editor = editorRef.current;
+      const model = editor.getModel();
+      const position = editor.getPosition();
+      const fullContent = model.getValue();
+      const textBeforeCursor = model.getValueInRange({
+        startLineNumber: 1,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column
+      });
+      
+      // Get AI completion
+      const completion = await aiService.getInlineCompletion({
+        prompt: textBeforeCursor,
+        context: fullContent,
+        filePath: currentFile?.path || 'untitled.ts',
+        cursorPosition: { line: position.lineNumber - 1, column: position.column - 1 },
+        model: 'gpt-4o-mini',
+        mode: 'inline'
+      });
+      
+      if (completion) {
+        // Insert the completion
+        const range = {
+          startLineNumber: position.lineNumber,
+          startColumn: position.column,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column
+        };
+        
+        editor.executeEdits('ai-completion', [{
+          range: range,
+          text: completion.text
+        }]);
+      }
+    } catch (error) {
+      console.error('AI completion failed:', error);
+    }
+  };
+
+  const handleTabClick = (filePath: string) => {
+    setActiveFile(filePath);
+  };
+
+  const handleTabClose = (filePath: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    closeFile(filePath);
+  };
+
+  const handleCreateNewFile = () => {
+    const fileName = prompt('Enter file name:') || 'untitled.txt';
+    addFile({
+      path: fileName,
+      name: fileName,
+      type: 'file',
+      size: 0,
+      lastModified: new Date(),
+      content: '',
+      language: getLanguageFromFilename(fileName)
+    });
+    setActiveFile(fileName);
   };
 
   const getLanguageFromFilename = (filename: string): string => {
@@ -114,16 +188,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ workspace, aiService }) => {
                       : 'bg-editor-surface text-editor-text-muted hover:text-editor-text'
                     }
                   `}
-                  onClick={() => {/* TODO: Set active file */}}
+                  onClick={() => handleTabClick(filePath)}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   <span className="text-sm">{file?.name || filePath}</span>
                   <button 
                     className="ml-2 p-1 hover:bg-editor-border rounded"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // TODO: Close file
-                    }}
+                    onClick={(e) => handleTabClose(filePath, e)}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -136,7 +207,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ workspace, aiService }) => {
         {/* New File Button */}
         <button 
           className="p-2 hover:bg-editor-border text-editor-text-muted hover:text-editor-text"
-          onClick={() => {/* TODO: Create new file */}}
+          onClick={handleCreateNewFile}
         >
           <Plus className="w-4 h-4" />
         </button>
