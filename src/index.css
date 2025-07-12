@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for the Cursor AI Clone */
+@layer base {
+  * {
+    @apply border-editor-border;
+  }
+  
+  body {
+    @apply bg-editor-bg text-editor-text antialiased;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+  
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    @apply w-3 h-3;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-editor-surface;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-editor-border rounded-sm;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-editor-text-muted;
+  }
+  
+  /* Selection styles */
+  ::selection {
+    @apply bg-editor-accent/30;
+  }
+  
+  ::-moz-selection {
+    @apply bg-editor-accent/30;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn-primary {
+    @apply bg-editor-accent hover:bg-editor-accent-hover text-white font-medium px-3 py-1.5 rounded-md transition-colors duration-200 text-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-editor-surface hover:bg-editor-border text-editor-text font-medium px-3 py-1.5 rounded-md transition-colors duration-200 text-sm border border-editor-border;
+  }
+  
+  .btn-ghost {
+    @apply hover:bg-editor-surface text-editor-text font-medium px-3 py-1.5 rounded-md transition-colors duration-200 text-sm;
+  }
+  
+  .btn-danger {
+    @apply bg-editor-error hover:bg-red-600 text-white font-medium px-3 py-1.5 rounded-md transition-colors duration-200 text-sm;
+  }
+  
+  /* Input styles */
+  .input-primary {
+    @apply bg-editor-surface border border-editor-border rounded-md px-3 py-2 text-sm text-editor-text placeholder:text-editor-text-muted focus:outline-none focus:ring-1 focus:ring-editor-accent focus:border-editor-accent;
+  }
+  
+  /* Panel styles */
+  .panel {
+    @apply bg-editor-surface border border-editor-border rounded-lg shadow-lg;
+  }
+  
+  .panel-header {
+    @apply px-4 py-3 border-b border-editor-border flex items-center justify-between;
+  }
+  
+  .panel-content {
+    @apply p-4;
+  }
+  
+  /* AI-specific styles */
+  .ai-suggestion {
+    @apply bg-ai-primary/10 border border-ai-primary/20 rounded-md p-3 backdrop-blur-sm;
+  }
+  
+  .ai-thinking {
+    @apply inline-flex items-center text-ai-accent;
+  }
+  
+  .ai-thinking::after {
+    content: '';
+    @apply w-1 h-4 bg-ai-accent ml-1 animate-typing;
+  }
+  
+  /* Code editor specific styles */
+  .monaco-editor {
+    @apply rounded-lg overflow-hidden;
+  }
+  
+  .monaco-editor .margin {
+    @apply bg-editor-bg;
+  }
+  
+  /* Chat message styles */
+  .chat-message {
+    @apply mb-4 p-3 rounded-lg max-w-none;
+  }
+  
+  .chat-message.user {
+    @apply bg-editor-surface ml-8;
+  }
+  
+  .chat-message.assistant {
+    @apply bg-ai-primary/5 border border-ai-primary/10 mr-8;
+  }
+  
+  /* File tree styles */
+  .file-tree-item {
+    @apply flex items-center py-1 px-2 rounded text-sm hover:bg-editor-surface cursor-pointer transition-colors duration-150;
+  }
+  
+  .file-tree-item.active {
+    @apply bg-editor-accent/10 text-editor-accent font-medium;
+  }
+  
+  .file-tree-item.modified {
+    @apply text-editor-warning;
+  }
+  
+  /* Diff viewer styles */
+  .diff-line {
+    @apply px-4 py-0.5 font-mono text-sm;
+  }
+  
+  .diff-line.added {
+    @apply bg-editor-success/10 border-l-2 border-editor-success;
+  }
+  
+  .diff-line.removed {
+    @apply bg-editor-error/10 border-l-2 border-editor-error;
+  }
+  
+  .diff-line.modified {
+    @apply bg-editor-warning/10 border-l-2 border-editor-warning;
+  }
+  
+  /* Command palette styles */
+  .command-item {
+    @apply flex items-center justify-between p-3 hover:bg-editor-surface cursor-pointer rounded-lg transition-colors duration-150;
+  }
+  
+  .command-item.selected {
+    @apply bg-editor-accent/10 text-editor-accent;
+  }
+  
+  /* Notification styles */
+  .notification {
+    @apply p-4 rounded-lg shadow-lg border backdrop-blur-sm max-w-sm;
+  }
+  
+  .notification.info {
+    @apply bg-editor-accent/10 border-editor-accent/20 text-editor-accent;
+  }
+  
+  .notification.success {
+    @apply bg-editor-success/10 border-editor-success/20 text-editor-success;
+  }
+  
+  .notification.warning {
+    @apply bg-editor-warning/10 border-editor-warning/20 text-editor-warning;
+  }
+  
+  .notification.error {
+    @apply bg-editor-error/10 border-editor-error/20 text-editor-error;
+  }
+  
+  /* Loading states */
+  .skeleton {
+    @apply bg-editor-surface animate-pulse rounded;
+  }
+  
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  /* Ghost text for AI suggestions */
+  .ghost-text {
+    @apply text-editor-text-muted/50 italic;
+  }
+  
+  /* Status bar styles */
+  .status-bar {
+    @apply bg-editor-surface border-t border-editor-border px-4 py-2 flex items-center justify-between text-sm;
+  }
+  
+  .status-item {
+    @apply flex items-center space-x-2 text-editor-text-muted hover:text-editor-text cursor-pointer transition-colors duration-150;
+  }
+  
+  /* Tooltip styles */
+  .tooltip {
+    @apply bg-editor-surface border border-editor-border rounded-md px-2 py-1 text-xs shadow-lg;
+  }
+}
+
+@layer utilities {
+  /* Custom utilities */
+  .text-gradient {
+    background: linear-gradient(135deg, #7c3aed, #a855f7, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .glass {
+    @apply backdrop-blur-md bg-editor-surface/80;
+  }
+  
+  .border-gradient {
+    border-image: linear-gradient(135deg, #7c3aed, #a855f7) 1;
+  }
+  
+  /* Animation utilities */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Focus utilities */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-editor-accent focus:ring-offset-2 focus:ring-offset-editor-bg;
+  }
+  
+  .focus-ring-inset {
+    @apply focus:outline-none focus:ring-2 focus:ring-editor-accent focus:ring-inset;
+  }
+}

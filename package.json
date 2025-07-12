@@ -1,0 +1,61 @@
+{
+  "name": "cursor-ai-puter-clone",
+  "version": "1.0.0",
+  "description": "A complete Cursor AI clone powered by Puter.js instead of Claude API",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src/**/*.{js,ts,jsx,tsx}",
+    "format": "prettier --write src/**/*.{js,ts,jsx,tsx,css,html}"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "monaco-editor": "^0.45.0",
+    "react-monaco-editor": "^0.55.0",
+    "@monaco-editor/react": "^4.6.0",
+    "react-diff-viewer": "^3.1.1",
+    "react-hotkeys-hook": "^4.4.1",
+    "zustand": "^4.4.7",
+    "immer": "^10.0.3",
+    "tailwindcss": "^3.3.6",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "lucide-react": "^0.294.0",
+    "react-resizable-panels": "^0.0.55",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
+    "react-syntax-highlighter": "^15.5.0",
+    "fuse.js": "^7.0.0",
+    "chokidar": "^3.5.3",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.54.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.1.0",
+    "vite": "^5.0.8",
+    "vitest": "^1.0.4"
+  },
+  "keywords": [
+    "cursor",
+    "ai",
+    "code-editor",
+    "puter.js",
+    "typescript",
+    "react",
+    "monaco-editor"
+  ],
+  "author": "Claude",
+  "license": "MIT"
+}
